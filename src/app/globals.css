@@ -13,7 +13,28 @@
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
+    --focus-outline: #1c60ff62;
+    --primary: #1C5FFF;
   }
+}
+
+input + label > span {
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: #A3A6B1;
+}
+
+input:focus {
+  outline: 2px solid var(--focus-outline);
+}
+
+input:focus + label > span {
+  outline: 2px solid var(--focus-outline);
+  border-color: var(--primary);
+}
+
+input:checked + label > span {
+  border: 4px solid var(--primary);
 }
 
 @layer utilities {

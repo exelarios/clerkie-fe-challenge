@@ -26,7 +26,13 @@ function AccountItem(props: AccountItemProps) {
   return (
     <div className="flex justify-between">
       <div className="flex gap-x-5">
-        <input id={id} type="checkbox" className="opacity-0 absolute" checked={enabled} onChange={onCheckedChanged}/>
+        <input
+          id={id}
+          type="checkbox"
+          className="opacity-0 absolute"
+          checked={enabled}
+          onChange={onCheckedChanged}
+        />
         <label htmlFor={id} className="flex gap-x-6">
           <span className={`${enabled ? "bg-brand" : "border-2"} flex m-auto justify-center w-4 h-4 rounded-sm border-text-disabled`}>
             {enabled ? <Checkmark className="m-auto"/> : null}

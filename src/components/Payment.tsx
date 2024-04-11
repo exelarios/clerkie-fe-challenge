@@ -1,9 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import TextInput from "@/components/TextInput";
-import RadioInput from "./RadioInput";
-import AccountItem from "./AccountItem";
-import { useActionState, useCallback, useEffect, useMemo, useState } from "react";
+import RadioInput from "@/components/RadioInput";
+import AccountItem from "@/components/AccountItem";
+
 import currencyFormat from "@/utils/currencyFormat";
 
 type Account = {
@@ -51,7 +52,6 @@ function Payment(props: PaymentProps) {
   }, []);
 
   const handleOnCheckedChanged = useCallback((accountName: string) => {
-    console.log("hit");
     const updatedAccounts = accounts.map((account) => {
       if (account.name == accountName) {
         return {
@@ -82,7 +82,11 @@ function Payment(props: PaymentProps) {
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 grid grid-cols-2 gap-5">
           <TextInput label="Account Number" placeholder="Account number"/>
-          <TextInput label="Confirm Account Number" placeholder="Account number"/>
+          <TextInput
+            label="Confirm Account Number"
+            placeholder="Account number"
+            // errorMessage="Mismatch account number."
+          />
           <TextInput label="Routing Number" placeholder="Routing number"/>
           <RadioInput label="Account Type">
             <RadioInput.Item
@@ -108,7 +112,10 @@ function Payment(props: PaymentProps) {
         <div className="flex justify-between">
           <div className="flex gap-x-3">
             <h2 className="font-semibold text-sm">Account Lists</h2>
-            <span className="text-brand text-sm">{amountOfAccountsEnabled} Accounts Selected</span>
+            <span
+              className="text-brand text-sm">
+              {amountOfAccountsEnabled} Accounts Selected
+            </span>
           </div>
           <span className="text-sm">Total Balance: {totalBalance}</span>
         </div>
@@ -116,8 +123,8 @@ function Payment(props: PaymentProps) {
           {accounts?.map((account)=> {
             return (
               <AccountItem
-                key={account.name}
                 {...account}
+                key={account.name}
                 onCheckedChanged={() => handleOnCheckedChanged(account.name)}
               />
             );
@@ -125,7 +132,8 @@ function Payment(props: PaymentProps) {
         </div>
       </div>
       <button
-        className="bg-brand p-3 rounded-md w-full text-border-default">
+        disabled
+        className="bg-brand p-3 rounded-md w-full disabled:bg-brand-subtle text-white">
         Submit
       </button>
     </form>

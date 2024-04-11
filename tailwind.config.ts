@@ -14,8 +14,11 @@ const config: Config = {
       "brand": "#1C5FFF",
       "dark": "#C9CAD2",
       "disabled": "#EFF0F2",
+      "hover": "#A3A6B1",
       "text-disabled": "#C9CAD2",
-      "text-subtle": "#A3A6B1"
+      "text-subtle": "#A3A6B1",
+      "brand-subtle": "#C1D4FF",
+      "critical": "#EB5757"
     },
     extend: {
       backgroundImage: {
