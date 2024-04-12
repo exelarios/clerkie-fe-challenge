@@ -5,11 +5,6 @@ type RadioInputProps = {
   children: React.ReactNode;
 }
 
-/*
-TODO:
-- add focus
-*/
-
 type RadioContext = {
   name: string;
 }

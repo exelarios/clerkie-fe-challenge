@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useCallback, useId } from "react";
 import TextInput from "@/components/TextInput";
 
 import currencyFormat from "@/utils/currencyFormat";
@@ -6,7 +6,7 @@ import currencyFormat from "@/utils/currencyFormat";
 function Checkmark(props: React.HTMLProps<SVGSVGElement>) {
   return (
     <svg {...props} width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 3.72222L3.85714 6.5L9 1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M1 3.72222L3.85714 6.5L9 1.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -15,13 +15,20 @@ type AccountItemProps = {
   name: string;
   balance: number;
   enabled?: boolean;
+  value: number;
   onCheckedChanged?: () => void;
+  onValueChanged?: (id: string, currencyFormat: CurrencyFormat) => void;
 }
 
 function AccountItem(props: AccountItemProps) {
-  const { name, balance, enabled = false, onCheckedChanged } = props;
+  const { name, value, balance, enabled = false, onValueChanged, onCheckedChanged } = props;
 
   const id = useId();
+
+  const handleOnValueChanged = useCallback((currency: CurrencyFormat) => {
+    if (!onValueChanged) return;
+    onValueChanged(name, currency);
+  }, [name, onValueChanged]);
 
   return (
     <div className="flex justify-between">
@@ -47,8 +54,11 @@ function AccountItem(props: AccountItemProps) {
         </label>
       </div>
       <TextInput
+        currency
         className="text-right w-28 my-auto"
         disabled={!enabled}
+        value={value}
+        onValueChanged={handleOnValueChanged}
         placeholder="$0.00"
       />
     </div>

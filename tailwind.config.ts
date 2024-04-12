@@ -18,7 +18,8 @@ const config: Config = {
       "text-disabled": "#C9CAD2",
       "text-subtle": "#A3A6B1",
       "brand-subtle": "#C1D4FF",
-      "critical": "#EB5757"
+      "critical": "#EB5757",
+      "white": "#FFFFFF"
     },
     extend: {
       backgroundImage: {

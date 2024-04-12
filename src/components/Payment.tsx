@@ -27,13 +27,17 @@ type PaymentOutput = {
 
 interface AccountList extends Account {
   enabled: boolean;
+  value: number;
 }
 
 function Payment(props: PaymentProps) {
   const { accounts: payload } = props;
 
+  const [accountNumber, setAccountNumber] = useState("");
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
   const [accountType, setAccountType] = useState<AccountType | null>(null);
   const [accounts, setAccounts] = useState<AccountList[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState(0);
 
   const totalBalance = useMemo(() => {
     const balance = payload.reduce((prev, current) => prev + current.balance, 0);
@@ -44,7 +48,8 @@ function Payment(props: PaymentProps) {
     const accounts = payload.map((account) => {
       return {
         ...account,
-        enabled: false
+        enabled: false,
+        value: 0
       }
     });
 
@@ -65,6 +70,20 @@ function Payment(props: PaymentProps) {
 
     setAccounts(updatedAccounts);
   }, [accounts]);
+  
+  const handleOnValueChanged = useCallback((id: string, currency: CurrencyFormat) => {
+    const updatedAccounts = accounts.map((account) => {
+      if (account.name === id) {
+        return {
+          ...account,
+          value: currency.value
+        }
+      }
+
+      return account;
+    });
+    setAccounts(updatedAccounts);
+  }, [accounts]);
 
   const amountOfAccountsEnabled = useMemo(() => {
     return accounts.reduce((prev, current) => {
@@ -76,17 +95,39 @@ function Payment(props: PaymentProps) {
     }, 0);
   }, [accounts]);
 
+  type CurrencyFormat = {
+    formattedValue: string;
+    value: number;
+  }
+
+  const onCurrencyTextChanged = useCallback((currency: CurrencyFormat) => {
+    console.log(currency);
+    setPaymentAmount(currency.value);
+  }, [paymentAmount]);
+
   return (
     <form className="bg-red-100 p-3 max-w-xl mx-auto m-10">
       <div>
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 grid grid-cols-2 gap-5">
-          <TextInput label="Account Number" placeholder="Account number"/>
+          {/* todo: check if confirm account matches with account number. */}
+          {/* todo: validate the account number. */}
           <TextInput
+            digitsOnly
+            label="Account Number"
+            placeholder="Account number"
+            value={accountNumber}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
+          />
+          <TextInput
+            digitsOnly
             label="Confirm Account Number"
             placeholder="Account number"
-            // errorMessage="Mismatch account number."
+            value={confirmAccountNumber}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmAccountNumber(e.target.value)}
+            errorMessage="Mismatch account number."
           />
+          {/* todo: validate the routing account */}
           <TextInput label="Routing Number" placeholder="Routing number"/>
           <RadioInput label="Account Type">
             <RadioInput.Item
@@ -105,7 +146,13 @@ function Payment(props: PaymentProps) {
       <div className="my-7">
         <h2 className="font-semibold text-sm">Payment Detail</h2>
         <div className="my-5 grid grid-cols-2 gap-5">
-          <TextInput label="Payment Amount" placeholder="$0.00"/>
+          <TextInput
+            currency
+            label="Payment Amount"
+            placeholder="$0.00"
+            value={paymentAmount}
+            onValueChanged={onCurrencyTextChanged}
+          />
         </div>
       </div>
       <div className="my-10">
@@ -126,6 +173,7 @@ function Payment(props: PaymentProps) {
                 {...account}
                 key={account.name}
                 onCheckedChanged={() => handleOnCheckedChanged(account.name)}
+                onValueChanged={handleOnValueChanged}
               />
             );
           })}
