@@ -2,6 +2,7 @@ import { useCallback, useId } from "react";
 import TextInput from "@/components/TextInput";
 
 import currencyFormat from "@/utils/currencyFormat";
+import CurrencyInput from "./CurrencyInput";
 
 function Checkmark(props: React.HTMLProps<SVGSVGElement>) {
   return (
@@ -15,20 +16,15 @@ type AccountItemProps = {
   name: string;
   balance: number;
   enabled?: boolean;
-  value: number;
-  onCheckedChanged?: () => void;
-  onValueChanged?: (id: string, currencyFormat: CurrencyFormat) => void;
+  value: string;
+  onCheckedChanged?: (id: string) => void;
+  onChange?: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 function AccountItem(props: AccountItemProps) {
-  const { name, value, balance, enabled = false, onValueChanged, onCheckedChanged } = props;
-
+  const { name, value, balance, enabled = false, onChange, onCheckedChanged } = props;
+  console.log(`Value from ${name}: ${value}`);
   const id = useId();
-
-  const handleOnValueChanged = useCallback((currency: CurrencyFormat) => {
-    if (!onValueChanged) return;
-    onValueChanged(name, currency);
-  }, [name, onValueChanged]);
 
   return (
     <div className="flex justify-between">
@@ -38,10 +34,14 @@ function AccountItem(props: AccountItemProps) {
           type="checkbox"
           className="opacity-0 absolute"
           checked={enabled}
-          onChange={onCheckedChanged}
+          onChange={onCheckedChanged ? () => onCheckedChanged(name) : undefined}
         />
         <label htmlFor={id} className="flex gap-x-6">
-          <span className={`${enabled ? "bg-brand" : "border-2"} flex m-auto justify-center w-4 h-4 rounded-sm border-text-disabled`}>
+          <span className={`
+            ${enabled ? "bg-brand" : "border-2"}
+            flex m-auto justify-center w-4 h-4
+            rounded-sm border-text-disabled
+          `}>
             {enabled ? <Checkmark className="m-auto"/> : null}
           </span>
           <div>
@@ -54,11 +54,10 @@ function AccountItem(props: AccountItemProps) {
         </label>
       </div>
       <TextInput
-        currency
         className="text-right w-28 my-auto"
         disabled={!enabled}
         value={value}
-        onValueChanged={handleOnValueChanged}
+        onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
         placeholder="$0.00"
       />
     </div>

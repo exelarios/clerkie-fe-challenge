@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TextInput from "@/components/TextInput";
 import RadioInput from "@/components/RadioInput";
 import AccountItem from "@/components/AccountItem";
+import CurrencyInput from "@/components/CurrencyInput";
 
 import currencyFormat from "@/utils/currencyFormat";
 
@@ -28,63 +29,79 @@ type PaymentOutput = {
 interface AccountList extends Account {
   enabled: boolean;
   value: number;
+  formattedValue: string;
 }
+
+/*
+Based on: https://developer.wepay.com/docs/articles/testing
+US Routing Numbers:
+
+Must prefix with:
+021000021
+011401533
+091000019
+
+follow by 3-17 digits.
+*/
+
+/*
+
+todo: Make sure values can't be negative
+*/
+
+/*
+user inputs payment amount -> recalculate all selected accounts prorate
+
+user untoggles after user controls account input -> recalculates payment amount
+
+user controls account input & untoggles account -> recalculate payment amount
+*/
 
 function Payment(props: PaymentProps) {
   const { accounts: payload } = props;
 
   const [accountNumber, setAccountNumber] = useState("");
   const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
+  const [routingNumber, setRoutingNumber] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
   const [accountType, setAccountType] = useState<AccountType | null>(null);
+
   const [accounts, setAccounts] = useState<AccountList[]>([]);
-  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [calculateProateEnabled, setCalculateProateEnabled] = useState(true);
 
   const totalBalance = useMemo(() => {
     const balance = payload.reduce((prev, current) => prev + current.balance, 0);
     return currencyFormat(balance);
   }, [payload]);
 
-  useEffect(() => {
-    const accounts = payload.map((account) => {
-      return {
-        ...account,
-        enabled: false,
-        value: 0
+  const recalculatePaymentAllocated = useCallback((list: AccountList[]) => {
+    return list.reduce((prev, current) => {
+      if (current.enabled) {
+        return prev + current.value;
       }
-    });
-
-    setAccounts(accounts);
+      
+      return prev;
+    }, 0);
   }, []);
 
-  const handleOnCheckedChanged = useCallback((accountName: string) => {
+  const handleOnCheckedChanged = (id: string) => {
     const updatedAccounts = accounts.map((account) => {
-      if (account.name == accountName) {
+      if (account.name == id) {
         return {
           ...account,
-          enabled: !account.enabled
+          enabled: !account.enabled,
+          value: account.enabled ? 0 : account.value,
+          formattedValue: account.enabled ? "": account.formattedValue
         }
       }
 
       return account;
     });
 
+    setCalculateProateEnabled(true);
     setAccounts(updatedAccounts);
-  }, [accounts]);
+  };
   
-  const handleOnValueChanged = useCallback((id: string, currency: CurrencyFormat) => {
-    const updatedAccounts = accounts.map((account) => {
-      if (account.name === id) {
-        return {
-          ...account,
-          value: currency.value
-        }
-      }
-
-      return account;
-    });
-    setAccounts(updatedAccounts);
-  }, [accounts]);
-
   const amountOfAccountsEnabled = useMemo(() => {
     return accounts.reduce((prev, current) => {
       if (current.enabled) {
@@ -93,42 +110,122 @@ function Payment(props: PaymentProps) {
 
       return prev;
     }, 0);
-  }, [accounts]);
+  }, [accounts, paymentAmount]);
 
-  type CurrencyFormat = {
-    formattedValue: string;
-    value: number;
+  //  reconcile our account's object with state that is required for our UI.
+  useEffect(() => {
+    const accounts = payload.map((account) => {
+      return {
+        ...account,
+        enabled: false,
+        value: 0,
+        formattedValue: ""
+      }
+    });
+
+    setAccounts(accounts);
+  }, []);
+
+  // Invoke prorate recalculation based on dependencies.
+  useEffect(() => {
+    if (!calculateProateEnabled || amountOfAccountsEnabled <= 0) {
+      return;
+    }
+
+    console.log("Prorate calculate");
+
+    const selectedTotalBalance = accounts.reduce((prev, current) =>  {
+      if (current.enabled) {
+        return prev + current.balance;
+      }
+
+      return prev;
+    }, 0);
+
+    const updatedAccountsWithProrate = accounts.map((account) => {
+      if (account.enabled) {
+        const rate = account.balance / selectedTotalBalance;
+        const paymentValue = Number.parseFloat(paymentAmount);
+        const value = Math.round(((rate * paymentValue) + Number.EPSILON) * 100) / 100;
+        return {
+          ...account,
+          value: value,
+          // Handles the issue of displaying "NaN" by setting the formattedValue to "0".
+          formattedValue: Number.isNaN(value) ? "0" : value.toString()
+        };
+      }
+
+      return account;
+    });
+
+    console.log("updated", updatedAccountsWithProrate);
+
+    setAccounts(updatedAccountsWithProrate);
+  }, [paymentAmount, amountOfAccountsEnabled]);
+
+  const handleOnAccountValueChanged = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const target = event.target;
+    console.log(target.value);
+
+    const updatedAccounts = accounts.map((account) => {
+      if (account.name == id) {
+        return {
+          ...account,
+          value: Number.parseFloat(target.value),
+          formattedValue: target.value
+        }
+      }
+
+      return account;
+    });
+
+    setCalculateProateEnabled(false);
+
+    const amount = recalculatePaymentAllocated(updatedAccounts);
+    setPaymentAmount(amount.toString());
+
+    setAccounts(updatedAccounts);
   }
 
-  const onCurrencyTextChanged = useCallback((currency: CurrencyFormat) => {
-    console.log(currency);
-    setPaymentAmount(currency.value);
-  }, [paymentAmount]);
+  const handleOnValidateAccountNumber = (value: string) => {
+    return [
+      {
+        condition: value.length < 3,
+        error: "The value is too short."
+      }, {
+        condition: value.length > 10,
+        error: "The value is too long."
+      }
+    ];
+  }
 
   return (
     <form className="bg-red-100 p-3 max-w-xl mx-auto m-10">
       <div>
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 grid grid-cols-2 gap-5">
-          {/* todo: check if confirm account matches with account number. */}
           {/* todo: validate the account number. */}
           <TextInput
-            digitsOnly
             label="Account Number"
             placeholder="Account number"
             value={accountNumber}
+            validate={handleOnValidateAccountNumber}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
           />
           <TextInput
-            digitsOnly
             label="Confirm Account Number"
             placeholder="Account number"
             value={confirmAccountNumber}
+            validate={(value) => [{ condition: value !== accountNumber, error: "Account number does not match."}]}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmAccountNumber(e.target.value)}
-            errorMessage="Mismatch account number."
           />
-          {/* todo: validate the routing account */}
-          <TextInput label="Routing Number" placeholder="Routing number"/>
+          <TextInput
+            label="Routing Number"
+            placeholder="Routing number"
+            value={routingNumber}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutingNumber(e.target.value)}
+            validate={(value) => [{ condition: value.length !== 9, error: "Not a valid routing number" }]}
+          />
           <RadioInput label="Account Type">
             <RadioInput.Item
               label="Checking"
@@ -147,11 +244,14 @@ function Payment(props: PaymentProps) {
         <h2 className="font-semibold text-sm">Payment Detail</h2>
         <div className="my-5 grid grid-cols-2 gap-5">
           <TextInput
-            currency
             label="Payment Amount"
             placeholder="$0.00"
             value={paymentAmount}
-            onValueChanged={onCurrencyTextChanged}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const value = e.target.value;
+              setCalculateProateEnabled(true);
+              setPaymentAmount(value);
+            }}
           />
         </div>
       </div>
@@ -172,15 +272,16 @@ function Payment(props: PaymentProps) {
               <AccountItem
                 {...account}
                 key={account.name}
-                onCheckedChanged={() => handleOnCheckedChanged(account.name)}
-                onValueChanged={handleOnValueChanged}
+                value={account.formattedValue}
+                onCheckedChanged={handleOnCheckedChanged}
+                onChange={handleOnAccountValueChanged}
               />
             );
           })}
         </div>
       </div>
       <button
-        disabled
+        disabled={amountOfAccountsEnabled < 1}
         className="bg-brand p-3 rounded-md w-full disabled:bg-brand-subtle text-white">
         Submit
       </button>

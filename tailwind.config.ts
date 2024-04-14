@@ -19,6 +19,7 @@ const config: Config = {
       "text-subtle": "#A3A6B1",
       "brand-subtle": "#C1D4FF",
       "critical": "#EB5757",
+      "light-critical": "#EB575760",
       "white": "#FFFFFF"
     },
     extend: {
