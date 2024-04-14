@@ -10,6 +10,7 @@ type TextInputProps = {
   value?: string;
   validate?: (value: string) => Validation[];
   onValueChanged?: (currencyFormat: CurrencyFormat) => void;
+  onValidateChanged?: (isValid: boolean) => void;
 } & React.HTMLProps<HTMLInputElement>
 
 function TextInput(props: TextInputProps) {
@@ -20,6 +21,7 @@ function TextInput(props: TextInputProps) {
     disabled,
     value,
     validate,
+    onValidateChanged,
     ...otherProps 
   } = props;
 
@@ -39,13 +41,19 @@ function TextInput(props: TextInputProps) {
   useEffect(() => {
     if (!value) return;
 
+    let isValid = true;
     setErrorMessage("");
     if (validate && value != undefined) {
       const tests = validate(value);
       for (const test of tests) {
         if (test.condition) {
+          isValid = false;
           setErrorMessage(test.error);
         }
+      }
+
+      if (onValidateChanged) {
+        onValidateChanged(isValid);
       }
     }
   }, [validate, value]);
@@ -73,7 +81,7 @@ function TextInput(props: TextInputProps) {
           ${styles} ${passedClassName}
         `}
       />
-      <span className="text-critical text-xs h-3">
+      <span className="text-critical text-xs h-3 mb-2 md:mb-0">
         {errorMessage}
       </span>
     </div>

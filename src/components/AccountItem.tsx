@@ -1,8 +1,7 @@
-import { useCallback, useId } from "react";
+import { useId } from "react";
 import TextInput from "@/components/TextInput";
 
 import currencyFormat from "@/utils/currencyFormat";
-import CurrencyInput from "./CurrencyInput";
 
 function Checkmark(props: React.HTMLProps<SVGSVGElement>) {
   return (
@@ -23,7 +22,6 @@ type AccountItemProps = {
 
 function AccountItem(props: AccountItemProps) {
   const { name, value, balance, enabled = false, onChange, onCheckedChanged } = props;
-  console.log(`Value from ${name}: ${value}`);
   const id = useId();
 
   return (
@@ -58,6 +56,7 @@ function AccountItem(props: AccountItemProps) {
         disabled={!enabled}
         value={value}
         onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
+        validate={(value) => [{ condition: Number.parseFloat(value) >= balance, error: "Insufficient funds" }]}
         placeholder="$0.00"
       />
     </div>

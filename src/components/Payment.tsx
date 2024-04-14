@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TextInput from "@/components/TextInput";
 import RadioInput from "@/components/RadioInput";
 import AccountItem from "@/components/AccountItem";
-import CurrencyInput from "@/components/CurrencyInput";
 
+import round from "@/utils/round";
 import currencyFormat from "@/utils/currencyFormat";
 
 type Account = {
@@ -28,12 +28,20 @@ type PaymentOutput = {
 
 interface AccountList extends Account {
   enabled: boolean;
-  value: number;
+  value: number | undefined;
   formattedValue: string;
 }
 
 /*
-Based on: https://developer.wepay.com/docs/articles/testing
+  Only accepts valid US routing numbers based on:
+  https://developer.wepay.com/docs/articles/testing
+*/
+function isValidRoutingNumber(value: string) {
+  return value === "021000021" || value === "011401533" || value === "091000019";
+}
+
+/*
+Based on: 
 US Routing Numbers:
 
 Must prefix with:
@@ -54,7 +62,9 @@ user inputs payment amount -> recalculate all selected accounts prorate
 
 user untoggles after user controls account input -> recalculates payment amount
 
-user controls account input & untoggles account -> recalculate payment amount
+user controls account input & untoggles account -> recaluclates prorate
+
+user selects an account, inputs an account's amount, select another 
 */
 
 function Payment(props: PaymentProps) {
@@ -70,18 +80,19 @@ function Payment(props: PaymentProps) {
   const [calculateProateEnabled, setCalculateProateEnabled] = useState(true);
 
   const totalBalance = useMemo(() => {
-    const balance = payload.reduce((prev, current) => prev + current.balance, 0);
-    return currencyFormat(balance);
+    return payload.reduce((prev, current) => prev + current.balance, 0);
   }, [payload]);
 
   const recalculatePaymentAllocated = useCallback((list: AccountList[]) => {
-    return list.reduce((prev, current) => {
-      if (current.enabled) {
+    const value = list.reduce((prev, current) => {
+      if (current.enabled && current.value) {
         return prev + current.value;
       }
       
       return prev;
     }, 0);
+
+    return round(value);
   }, []);
 
   const handleOnCheckedChanged = (id: string) => {
@@ -90,7 +101,9 @@ function Payment(props: PaymentProps) {
         return {
           ...account,
           enabled: !account.enabled,
-          value: account.enabled ? 0 : account.value,
+          // if the old state for that account was enabled, therefore it's 
+          // being unchecked, we state the value to undefined.
+          value: account.enabled ? undefined : account.value,
           formattedValue: account.enabled ? "": account.formattedValue
         }
       }
@@ -112,13 +125,13 @@ function Payment(props: PaymentProps) {
     }, 0);
   }, [accounts, paymentAmount]);
 
-  //  reconcile our account's object with state that is required for our UI.
+  // Reconcile our account's object with extra state that is required for our UI.
   useEffect(() => {
     const accounts = payload.map((account) => {
       return {
         ...account,
         enabled: false,
-        value: 0,
+        value: undefined,
         formattedValue: ""
       }
     });
@@ -132,8 +145,6 @@ function Payment(props: PaymentProps) {
       return;
     }
 
-    console.log("Prorate calculate");
-
     const selectedTotalBalance = accounts.reduce((prev, current) =>  {
       if (current.enabled) {
         return prev + current.balance;
@@ -146,12 +157,12 @@ function Payment(props: PaymentProps) {
       if (account.enabled) {
         const rate = account.balance / selectedTotalBalance;
         const paymentValue = Number.parseFloat(paymentAmount);
-        const value = Math.round(((rate * paymentValue) + Number.EPSILON) * 100) / 100;
+        const value = round(rate * paymentValue);
         return {
           ...account,
           value: value,
-          // Handles the issue of displaying "NaN" by setting the formattedValue to "0".
-          formattedValue: Number.isNaN(value) ? "0" : value.toString()
+          // Handles the issue of displaying "NaN" by setting the formattedValue to empty string.
+          formattedValue: Number.isNaN(value) ? "" : value.toString()
         };
       }
 
@@ -182,7 +193,7 @@ function Payment(props: PaymentProps) {
     setCalculateProateEnabled(false);
 
     const amount = recalculatePaymentAllocated(updatedAccounts);
-    setPaymentAmount(amount.toString());
+    setPaymentAmount(!Number.isNaN(amount) ? amount.toString() : "");
 
     setAccounts(updatedAccounts);
   }
@@ -191,32 +202,41 @@ function Payment(props: PaymentProps) {
     return [
       {
         condition: value.length < 3,
-        error: "The value is too short."
+        error: "Your Account number is too short."
       }, {
-        condition: value.length > 10,
-        error: "The value is too long."
+        condition: value.length > 17,
+        error: "Your Account number is too long."
+      }
+    ];
+  }
+
+  const handleOnValidateRoutingNumber = (value: string) => {
+    return [
+      { 
+        condition: !isValidRoutingNumber(value),
+        error: "Not a valid routing number."
       }
     ];
   }
 
   return (
-    <form className="bg-red-100 p-3 max-w-xl mx-auto m-10">
+    <form className="bg-red-100 p-5 max-w-xl mx-auto m-10">
       <div>
         <h2 className="font-semibold text-sm">Payment Information</h2>
-        <div className="my-3 grid grid-cols-2 gap-5">
-          {/* todo: validate the account number. */}
+        <div className="my-3 md:grid grid-cols-2 gap-5">
           <TextInput
             label="Account Number"
             placeholder="Account number"
             value={accountNumber}
             validate={handleOnValidateAccountNumber}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
+            onValidateChanged={(isValid) => console.log(isValid)}
           />
           <TextInput
             label="Confirm Account Number"
             placeholder="Account number"
             value={confirmAccountNumber}
-            validate={(value) => [{ condition: value !== accountNumber, error: "Account number does not match."}]}
+            validate={(value) => [{ condition: value !== accountNumber, error: "Your Account numbers do not match."}]}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmAccountNumber(e.target.value)}
           />
           <TextInput
@@ -224,7 +244,7 @@ function Payment(props: PaymentProps) {
             placeholder="Routing number"
             value={routingNumber}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutingNumber(e.target.value)}
-            validate={(value) => [{ condition: value.length !== 9, error: "Not a valid routing number" }]}
+            validate={handleOnValidateRoutingNumber}
           />
           <RadioInput label="Account Type">
             <RadioInput.Item
@@ -242,11 +262,12 @@ function Payment(props: PaymentProps) {
       </div>
       <div className="my-7">
         <h2 className="font-semibold text-sm">Payment Detail</h2>
-        <div className="my-5 grid grid-cols-2 gap-5">
+        <div className="my-5 md:grid grid-cols-2 gap-5">
           <TextInput
             label="Payment Amount"
             placeholder="$0.00"
             value={paymentAmount}
+            validate={(value) => [{ condition: Number.parseFloat(value) > totalBalance, error: "Insufficient funds" }]}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               const value = e.target.value;
               setCalculateProateEnabled(true);
@@ -257,14 +278,14 @@ function Payment(props: PaymentProps) {
       </div>
       <div className="my-10">
         <div className="flex justify-between">
-          <div className="flex gap-x-3">
+          <div className="flex gap-x-3 flex-wrap">
             <h2 className="font-semibold text-sm">Account Lists</h2>
             <span
               className="text-brand text-sm">
               {amountOfAccountsEnabled} Accounts Selected
             </span>
           </div>
-          <span className="text-sm">Total Balance: {totalBalance}</span>
+          <span className="text-sm">Total Balance: {currencyFormat(totalBalance)}</span>
         </div>
         <div className="my-4 flex flex-col gap-y-7">
           {accounts?.map((account)=> {
@@ -282,7 +303,7 @@ function Payment(props: PaymentProps) {
       </div>
       <button
         disabled={amountOfAccountsEnabled < 1}
-        className="bg-brand p-3 rounded-md w-full disabled:bg-brand-subtle text-white">
+        className="bg-brand p-3 rounded-md w-full disabled:bg-light-brand text-white">
         Submit
       </button>
     </form>

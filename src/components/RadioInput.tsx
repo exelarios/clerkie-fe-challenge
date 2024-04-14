@@ -22,7 +22,7 @@ function RadioInput(props: RadioInputProps) {
 
   return (
     <RadioContext.Provider value={value}>
-      <fieldset className="flex gap-x-5">
+      <fieldset className="flex gap-x-5 py-3">
         <legend className="font-medium text-sm">{label}</legend>
         {children}
       </fieldset>
