@@ -111,7 +111,6 @@ function Payment(props: PaymentProps) {
 
   const isFormSubmittable = useMemo(() => {
     const output = Object.values(form);
-    console.log(output);
     for (const values of output) {
       if (Array.isArray(values)) {
         for (const account of values) {
@@ -141,9 +140,11 @@ function Payment(props: PaymentProps) {
       </div>
     );
   }
-  
+
   return (
-    <form onSubmit={handleOnSubmit} className="bg-red-100 p-5 max-w-xl mx-auto m-10">
+    <form
+      onSubmit={handleOnSubmit}
+      className="bg-red-100 p-5 max-w-xl mx-auto m-10">
       <div>
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 md:grid grid-cols-2 gap-5">
@@ -223,9 +224,10 @@ function Payment(props: PaymentProps) {
                 key={account.name}
                 value={account.formattedValue}
                 errorMessage={account.message}
-                onCheckedChanged={(id) => 
+                onCheckedChanged={(id) => {
+                  console.log(id);
                   dispatch({ type: "TOGGLE_ACCOUNT", payload: { id }})
-                }
+                }}
                 onChange={handleOnAccountValueChanged}
               />
             );

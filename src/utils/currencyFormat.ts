@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 function currencyFormat(amount: number) {
   return Intl.NumberFormat("en-US", {
     currency: "USD",

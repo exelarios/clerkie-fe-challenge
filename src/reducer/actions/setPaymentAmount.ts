@@ -1,7 +1,8 @@
-import round from "@/utils/round";
-
 import type { State, Action } from "@/reducer/payment";
 import calculateProrate from "@/utils/calculateProrate";
+
+import paymentAmountValidation from "@/utils/paymentAmountValidation";
+
 
 function setPaymentAmount(form: State, action: Action): State {
   if (action.type !== "SET_PAYMENT_AMOUNT") {
@@ -17,23 +18,14 @@ function setPaymentAmount(form: State, action: Action): State {
   }, 0);
 
   const paymentValue = Number.parseFloat(value);
-
-  // Won't recalculate prorate if the balance is over the total balance.
   const isOverBalance = paymentValue > totalBalance;
-  if (isOverBalance) {
-    message = "Insufficient funds.";
-  }
-
-  if (Number.isNaN(paymentValue) || paymentValue <= 0) {
-    message = "Must be greater than zero.";
-  }
 
   return {
     ...form,
     accounts: !isOverBalance ? calculateProrate(accounts, paymentValue) : accounts,
     paymentAmount: {
       ...form.paymentAmount,
-      message: message,
+      message: paymentAmountValidation(accounts, paymentValue),
       isValidated: message.length === 0,
       value: value
     }

@@ -1,4 +1,5 @@
 import type { State, Action, AccountList } from "@/reducer/payment";
+import paymentAmountValidation from "@/utils/paymentAmountValidation";
 import round from "@/utils/round";
 
 const calculatePaymentAllocated = (list: AccountList[]) => {
@@ -20,15 +21,15 @@ function setAccountPayment(form: State, action: Action): State {
 
   const { id, value } = action.payload;
 
-  let isOverBalance = false;
+  let isAccountOverBalance = false;
   const updatedAccounts = form.accounts.map((account) => {
     if (account.name == id) {
 
       let message = "";
       const accountPaymentValue = Number.parseFloat(value);
-      isOverBalance = accountPaymentValue > account.balance;
+      isAccountOverBalance = accountPaymentValue > account.balance;
 
-      if (isOverBalance) {
+      if (isAccountOverBalance) {
         message = "Insufficient funds.";
       }
 
@@ -48,14 +49,15 @@ function setAccountPayment(form: State, action: Action): State {
     return account;
   });
 
-
   const paymentValue = calculatePaymentAllocated(updatedAccounts);
+  const message = paymentAmountValidation(form.accounts, paymentValue);
 
   return {
     ...form,
     paymentAmount: {
       ...form.paymentAmount,
-      value: !isOverBalance ? paymentValue.toString() : form.paymentAmount.value,
+      value: !isAccountOverBalance ? paymentValue.toString() : form.paymentAmount.value,
+      message: message
     },
     accounts: updatedAccounts
   };
