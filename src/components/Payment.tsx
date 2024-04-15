@@ -86,7 +86,7 @@ function Payment(props: PaymentProps) {
         accounts: accounts
       }
     });
-  }, []);
+  }, [payload]);
 
   const handleOnAccountValueChanged = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const target = event.target;
