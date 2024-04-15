@@ -27,16 +27,12 @@ type FormValue<T> = {
 }
 
 export type State = {
-  form: {
-    accountNumber: FormValue<string>;
-    confirmAccountNumber: FormValue<string>;
-    routingNumber: FormValue<string>;
-    accountType: FormValue<AccountType>;
-    paymentAmount: FormValue<string>;
-    accounts: AccountList[];
-  },
-  isSubmittable: boolean;
-  calculateProrateEnabled: boolean;
+  accountNumber: FormValue<string>;
+  confirmAccountNumber: FormValue<string>;
+  routingNumber: FormValue<string>;
+  accountType: FormValue<AccountType>;
+  paymentAmount: FormValue<string>;
+  accounts: AccountList[];
 }
 
 export type Action = {
@@ -82,8 +78,24 @@ export type Action = {
   }
 }
 
+function setAccountType(state: State, action: Action) {
+  if (action.type !== "SET_ACCOUNT_TYPE") {
+    throw new Error(`Incorrect action type called; must be ${action.type}`);
+  }
+
+  const value = action.payload.value;
+
+  return {
+    ...state,
+    accountType: {
+      ...state.accountType,
+      isValidated: value === "Checking" || value === "Savings",
+      value: action.payload.value
+    }
+  }
+}
+
 function paymentReducer(state: State, action: Action): State {
-  const form = state.form;
   switch(action.type) {
     case "SET_ACCOUNT_NUMBER": {
       return setAccountNumber(state, action);
@@ -104,27 +116,17 @@ function paymentReducer(state: State, action: Action): State {
       return setAccountPayment(state, action);
     }
     case "SET_ACCOUNT_TYPE": {
+      return setAccountType(state, action);
+    }
+    case "POPULATE_ACCOUNTS": {
       return {
         ...state,
-        form: {
-          ...form,
-          accountType: {
-            ...form.accountType,
-            value: action.payload.value
-          }
-        }
+        accounts: action.payload.accounts
       }
     }
-    case "POPULATE_ACCOUNTS":
-      return {
-        ...state,
-        form: {
-          ...form,
-          accounts: action.payload.accounts
-        }
-      }
-    default:
-      throw new Error(`Invalid Action type passed '${action.type}' into PaymentReducer.`);
+    default: {
+      throw new Error(`Invalid Action type passed '${(action as Action).type}' into PaymentReducer.`);
+    }
   }
 }
 

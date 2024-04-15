@@ -53,7 +53,7 @@ function AccountItem(props: AccountItemProps) {
         </label>
       </div>
       <TextField
-        className="text-right w-28 my-auto"
+        className="text-right ltr:w-28 my-auto"
         disabled={!enabled}
         value={value}
         errorMessage={errorMessage}

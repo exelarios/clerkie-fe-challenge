@@ -1,29 +1,30 @@
 import type { State, Action } from "@/reducer/payment";
 
-function setConfirmAccountNumber(state: State, action: Action): State {
+function setConfirmAccountNumber(form: State, action: Action): State {
   if (action.type !== "SET_CONFIRM_ACCOUNT_NUMBER") {
     throw new Error(`Incorrect action type called; must be ${action.type}`);
   }
 
   const { value } = action.payload;
+  const accountNumber = form.accountNumber.value;
 
   let message = "";
-  let isValidated = true;
 
-  if (state.form.accountNumber.value !== value) {
+  if (accountNumber !== value) {
     message = "Your account number does not match.";
-    isValidated = false;
+  }
+
+  if (Number.isNaN(value) || value.length == 0) {
+    message = "This field can not be left blank.";
   }
 
   return {
-    ...state,
-    form: {
-      ...state.form,
-      confirmAccountNumber: {
-        ...state.form.confirmAccountNumber,
-        message: message,
-        value: action.payload.value,
-      }
+    ...form,
+    confirmAccountNumber: {
+      ...form.confirmAccountNumber,
+      message: message,
+      isValidated: message.length === 0,
+      value: action.payload.value,
     }
   };
 }

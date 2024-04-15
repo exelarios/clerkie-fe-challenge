@@ -8,7 +8,7 @@ function isValidRoutingNumber(value: string) {
   return value === "021000021" || value === "011401533" || value === "091000019";
 }
 
-function setRoutingNumber(state: State, action: Action): State {
+function setRoutingNumber(form: State, action: Action): State {
   if (action.type !== "SET_ROUTING_NUMBER") {
     throw new Error(`Incorrect action type called; must be ${action.type}`);
   }
@@ -22,15 +22,12 @@ function setRoutingNumber(state: State, action: Action): State {
   }
 
   return {
-    ...state,
-    form: {
-      ...state.form,
-      routingNumber: {
-        ...state.form.routingNumber,
-        message: message,
-        isValidated: message.length !== 0,
-        value: action.payload.value,
-      }
+    ...form,
+    routingNumber: {
+      ...form.routingNumber,
+      message: message,
+      isValidated: message.length === 0,
+      value: action.payload.value,
     }
   };
 }

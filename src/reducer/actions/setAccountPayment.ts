@@ -13,30 +13,34 @@ const calculatePaymentAllocated = (list: AccountList[]) => {
   return round(value);
 }
 
-function setAccountPayment(state: State, action: Action): State {
+function setAccountPayment(form: State, action: Action): State {
   if (action.type !== "SET_ACCOUNT_PAYMENT") {
     throw new Error(`Incorrect action type called; must be ${action.type}`);
   }
 
-  const form = state.form;
   const { id, value } = action.payload;
 
+  let isOverBalance = false;
   const updatedAccounts = form.accounts.map((account) => {
     if (account.name == id) {
 
       let message = "";
       const accountPaymentValue = Number.parseFloat(value);
-      const isOverBalance = accountPaymentValue > account.balance;
+      isOverBalance = accountPaymentValue > account.balance;
 
       if (isOverBalance) {
         message = "Insufficient funds.";
+      }
+
+      if (Number.isNaN(accountPaymentValue) || accountPaymentValue <= 0) {
+        message = "Must be greater than 0.";
       }
 
       return {
         ...account,
         value: Number.parseFloat(value),
         message: message,
-        isValidated: message.length !== 0,
+        isValidated: message.length === 0,
         formattedValue: value
       }
     }
@@ -48,16 +52,12 @@ function setAccountPayment(state: State, action: Action): State {
   const paymentValue = calculatePaymentAllocated(updatedAccounts);
 
   return {
-    ...state,
-    form: {
-      ...form,
-      paymentAmount: {
-        ...form.paymentAmount,
-        value: paymentValue.toString()
-      },
-      accounts: updatedAccounts
+    ...form,
+    paymentAmount: {
+      ...form.paymentAmount,
+      value: !isOverBalance ? paymentValue.toString() : form.paymentAmount.value,
     },
-    calculateProrateEnabled: false
+    accounts: updatedAccounts
   };
 }
 

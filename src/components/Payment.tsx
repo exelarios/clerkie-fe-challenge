@@ -42,43 +42,38 @@ type PaymentProps = {
 }
 
 const initialPaymentState = {
-  calculateProrateEnabled: true,
-  isSubmittable: false,
-  form: {
-    accountNumber: {
-      isValidated: false,
-      message: "",
-      value: ""
-    },
-    confirmAccountNumber: {
-      isValidated: false,
-      message: "",
-      value: ""
-    },
-    routingNumber: {
-      isValidated: false,
-      message: "",
-      value: ""
-    },
-    accountType: {
-      isValidated: false,
-      message: "",
-      value: null
-    },
-    paymentAmount: {
-      isValidated: false,
-      message: "",
-      value: ""
-    },
-    accounts: []
+  accountNumber: {
+    isValidated: false,
+    message: "",
+    value: ""
   },
+  confirmAccountNumber: {
+    isValidated: false,
+    message: "",
+    value: ""
+  },
+  routingNumber: {
+    isValidated: false,
+    message: "",
+    value: ""
+  },
+  accountType: {
+    isValidated: false,
+    message: "",
+    value: null
+  },
+  paymentAmount: {
+    isValidated: false,
+    message: "",
+    value: ""
+  },
+  accounts: []
 }
 
 function Payment(props: PaymentProps) {
   const { accounts: payload } = props;
 
-  const [state, dispatch] = useReducer(paymentReducer, initialPaymentState);
-  const { form, isSubmittable } = state;
+  const [form, dispatch] = useReducer(paymentReducer, initialPaymentState);
 
   const totalBalance = useMemo(() => {
     return payload.reduce((prev, current) => prev + current.balance, 0);
@@ -128,7 +123,6 @@ function Payment(props: PaymentProps) {
 
   const handleOnPaymentAmountChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    // setCalculateProrateEnabled(true);
     dispatch({
       type: "SET_PAYMENT_AMOUNT",
       payload: {
@@ -137,6 +131,26 @@ function Payment(props: PaymentProps) {
     });
   }
 
+  const isFormSubmittable = useMemo(() => {
+    const output = Object.values(form);
+    console.log(output);
+    for (const values of output) {
+      if (Array.isArray(values)) {
+        for (const account of values) {
+          if (account.enabled && !account.isValidated) {
+            return false;
+          }
+        }
+      } else {
+        if (!values.isValidated) {
+          return false;
+        }
+      }
+    }
+
+    return amountOfAccountsEnabled >= 1;
+  }, [form, amountOfAccountsEnabled]);
+  
   return (
     <form className="bg-red-100 p-5 max-w-xl mx-auto m-10">
       <div>
@@ -228,7 +242,7 @@ function Payment(props: PaymentProps) {
         </div>
       </div>
       <button
-        disabled={amountOfAccountsEnabled < 1 || (form.accountType.value !== "Checking" && form.accountType.value !== "Savings")}
+        disabled={!isFormSubmittable}
         className="bg-brand p-3 rounded-md w-full disabled:bg-light-brand text-white">
         Submit
       </button>

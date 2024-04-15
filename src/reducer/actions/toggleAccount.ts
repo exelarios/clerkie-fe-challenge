@@ -1,12 +1,11 @@
 import type { State, Action } from "@/reducer/payment";
 import calculateProrate from "@/utils/calculateProrate";
 
-function toggleAccount(state: State, action: Action): State {
+function toggleAccount(form: State, action: Action): State {
   if (action.type !== "TOGGLE_ACCOUNT") {
     throw new Error(`Incorrect action type called; must be ${action.type}`);
   }
 
-  const form = state.form;
   const { id } = action.payload;
   const paymentValue = Number.parseFloat(form.paymentAmount.value);
 
@@ -18,7 +17,8 @@ function toggleAccount(state: State, action: Action): State {
         // if the old state for that account was enabled, therefore it's 
         // being unchecked, we state the value to undefined.
         value: account.enabled ? undefined : account.value,
-        formattedValue: account.enabled ? "": account.formattedValue
+        formattedValue: account.enabled ? "": account.formattedValue,
+        isValidated: account.message.length === 0
       }
     }
 
@@ -26,12 +26,8 @@ function toggleAccount(state: State, action: Action): State {
   });
 
   return {
-    ...state,
-    form: {
-      ...state.form,
-      accounts: calculateProrate(updatedAccounts, paymentValue)
-    },
-    calculateProrateEnabled: true
+    ...form,
+    accounts: calculateProrate(updatedAccounts, paymentValue)
   };
 }
 
