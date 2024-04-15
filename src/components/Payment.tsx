@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import TextInput from "@/components/TextInput";
 import RadioInput from "@/components/RadioInput";
 import AccountItem from "@/components/AccountItem";
@@ -17,19 +17,11 @@ type PaymentProps = {
   accounts: Account[],
 }
 
-type AccountType = "Checking" | "Savings";
-
-type PaymentOutput = {
-  accountNumber: number;
-  routingNumber: number;
-  accountType: AccountType;
-  paymentAmount: number;
-}
-
 interface AccountList extends Account {
   enabled: boolean;
   value: number | undefined;
   formattedValue: string;
+  isValidated: boolean;
 }
 
 /*
@@ -41,20 +33,16 @@ function isValidRoutingNumber(value: string) {
 }
 
 /*
-Based on: 
-US Routing Numbers:
 
-Must prefix with:
-021000021
-011401533
-091000019
-
-follow by 3-17 digits.
-*/
-
-/*
-
-todo: Make sure values can't be negative
+todo: 
+- make sure payment amount can't be negative.
+- check for all form validation before allow user to press submit.
+  - account number
+  - confirm account number
+  - account type
+  - payment amount
+  - accounts along with their amount inputs
+  + at least one account is selected
 */
 
 /*
@@ -67,17 +55,172 @@ user controls account input & untoggles account -> recaluclates prorate
 user selects an account, inputs an account's amount, select another 
 */
 
+type AccountType = "Checking" | "Savings" | null;
+
+type FormValue<T> = {
+  isValidated: boolean;
+  value: T;
+}
+
+type State = {
+  form: {
+    accountNumber: FormValue<string>;
+    confirmAccountNumber: FormValue<string>;
+    routingNumber: FormValue<string>;
+    accountType: FormValue<AccountType>;
+    paymentAmount: FormValue<string>;
+    accounts: AccountList[];
+  },
+  calculateProrateEnabled: boolean;
+}
+
+type Action = {
+  type: "SET_ACCOUNT_NUMBER",
+  payload: {
+    value: string;
+  }
+} | {
+  type: "SET_ROUTING_NUMBER",
+  payload: {
+    value: string;
+  }
+} | {
+  type: "SET_CONFIRM_ACCOUNT_NUMBER",
+  payload: {
+    value: string;
+  }
+} | {
+  type: "SET_ACCOUNT_TYPE",
+  payload: {
+    value: AccountType
+  }
+} | {
+  type: "SET_PAYMENT_AMOUNT",
+  payload: {
+    value: string;
+  }
+} | {
+  type: "SET_ACCOUNT_PAYMENT",
+  payload: {
+    id: string;
+    value: string;
+  }
+} | {
+  type: "POPULATE_ACCOUNTS",
+  payload: {
+    accounts: AccountList[]
+  }
+}
+
+function paymentReducer(state: State, action: Action): State {
+  const form = state.form;
+  switch(action.type) {
+    case "SET_ACCOUNT_NUMBER":
+      return {
+        ...state,
+        form: {
+          ...form,
+          accountNumber: {
+            ...form.accountNumber,
+            value: action.payload.value
+          }
+        }
+      }
+    case "SET_CONFIRM_ACCOUNT_NUMBER":
+      return {
+        ...state,
+        form: {
+          ...form,
+          confirmAccountNumber: {
+            ...form.confirmAccountNumber,
+            value: action.payload.value
+          }
+        }
+      }
+    case "SET_ROUTING_NUMBER":
+      return {
+        ...state,
+        form: {
+          ...form,
+          routingNumber: {
+            ...form.routingNumber,
+            value: action.payload.value
+          }
+        }
+      }
+    case "SET_PAYMENT_AMOUNT": {
+      return {
+        ...state,
+        form: {
+          ...form,
+          paymentAmount: {
+            ...form.paymentAmount,
+            value: action.payload.value
+          }
+        },
+        calculateProrateEnabled: true,
+      }
+    }
+    case "SET_ACCOUNT_TYPE": {
+      return {
+        ...state,
+        form: {
+          ...form,
+          accountType: {
+            ...form.accountType,
+            value: action.payload.value
+          }
+        }
+      }
+    }
+    case "POPULATE_ACCOUNTS":
+      return {
+        ...state,
+        form: {
+          ...form,
+          accounts: action.payload.accounts
+        }
+      }
+    default:
+      throw new Error(`Invalid Action type passed '${action.type}' into PaymentReducer.`);
+  }
+}
+
+const initialPaymentState = {
+  calculateProrateEnabled: true,
+  form: {
+    accountNumber: {
+      isValidated: false,
+      value: ""
+    },
+    confirmAccountNumber: {
+      isValidated: false,
+      value: ""
+    },
+    routingNumber: {
+      isValidated: false,
+      value: ""
+    },
+    accountType: {
+      isValidated: false,
+      value: null
+    },
+    paymentAmount: {
+      isValidated: false,
+      value: ""
+    },
+    accounts: []
+  },
+}
+
 function Payment(props: PaymentProps) {
   const { accounts: payload } = props;
 
-  const [accountNumber, setAccountNumber] = useState("");
-  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
-  const [routingNumber, setRoutingNumber] = useState("");
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [accountType, setAccountType] = useState<AccountType | null>(null);
+  const [state, dispatch] = useReducer(paymentReducer, initialPaymentState);
+  const { form, calculateProrateEnabled } = state;
 
   const [accounts, setAccounts] = useState<AccountList[]>([]);
-  const [calculateProateEnabled, setCalculateProateEnabled] = useState(true);
+  // const [calculateProrateEnabled, setCalculateProrateEnabled] = useState(true);
 
   const totalBalance = useMemo(() => {
     return payload.reduce((prev, current) => prev + current.balance, 0);
@@ -111,7 +254,7 @@ function Payment(props: PaymentProps) {
       return account;
     });
 
-    setCalculateProateEnabled(true);
+    setCalculateProrateEnabled(true);
     setAccounts(updatedAccounts);
   };
   
@@ -123,7 +266,7 @@ function Payment(props: PaymentProps) {
 
       return prev;
     }, 0);
-  }, [accounts, paymentAmount]);
+  }, [accounts, form.paymentAmount.value]);
 
   // Reconcile our account's object with extra state that is required for our UI.
   useEffect(() => {
@@ -132,16 +275,34 @@ function Payment(props: PaymentProps) {
         ...account,
         enabled: false,
         value: undefined,
-        formattedValue: ""
+        formattedValue: "",
+        isValidated: false
       }
     });
+
+    dispatch({
+      type: "POPULATE_ACCOUNTS",
+      payload: {
+        accounts: accounts
+      }
+    });
+
+    // add dynamic account lists onto the validation object's state.
+    // for (const account of accounts) {
+    //   setValidation((values) => {
+    //     return {
+    //       ...values,
+    //       [account.name]: false
+    //     }
+    //   });
+    // }
 
     setAccounts(accounts);
   }, []);
 
   // Invoke prorate recalculation based on dependencies.
   useEffect(() => {
-    if (!calculateProateEnabled || amountOfAccountsEnabled <= 0) {
+    if (!calculateProrateEnabled || amountOfAccountsEnabled <= 0) {
       return;
     }
 
@@ -156,7 +317,7 @@ function Payment(props: PaymentProps) {
     const updatedAccountsWithProrate = accounts.map((account) => {
       if (account.enabled) {
         const rate = account.balance / selectedTotalBalance;
-        const paymentValue = Number.parseFloat(paymentAmount);
+        const paymentValue = Number.parseFloat(form.paymentAmount.value);
         const value = round(rate * paymentValue);
         return {
           ...account,
@@ -172,7 +333,7 @@ function Payment(props: PaymentProps) {
     console.log("updated", updatedAccountsWithProrate);
 
     setAccounts(updatedAccountsWithProrate);
-  }, [paymentAmount, amountOfAccountsEnabled]);
+  }, [form.paymentAmount.value, amountOfAccountsEnabled]);
 
   const handleOnAccountValueChanged = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const target = event.target;
@@ -190,13 +351,27 @@ function Payment(props: PaymentProps) {
       return account;
     });
 
-    setCalculateProateEnabled(false);
+    setCalculateProrateEnabled(false);
 
     const amount = recalculatePaymentAllocated(updatedAccounts);
     setPaymentAmount(!Number.isNaN(amount) ? amount.toString() : "");
 
     setAccounts(updatedAccounts);
   }
+
+  const handleOnPaymentAmountChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    // setCalculateProrateEnabled(true);
+    dispatch({
+      type: "SET_PAYMENT_AMOUNT",
+      payload: {
+        value: value
+      }
+    });
+  }
+
+  const handleOnAccountValidationChanged = useCallback((id: string, isValid: boolean) => {
+  }, []);
 
   const handleOnValidateAccountNumber = (value: string) => {
     return [
@@ -219,6 +394,12 @@ function Payment(props: PaymentProps) {
     ];
   }
 
+  const isFormSubmittable = useMemo(() => {
+    return false;
+  }, []);
+
+  console.log(state);
+
   return (
     <form className="bg-red-100 p-5 max-w-xl mx-auto m-10">
       <div>
@@ -227,35 +408,34 @@ function Payment(props: PaymentProps) {
           <TextInput
             label="Account Number"
             placeholder="Account number"
-            value={accountNumber}
+            value={form.accountNumber.value}
             validate={handleOnValidateAccountNumber}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
-            onValidateChanged={(isValid) => console.log(isValid)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => dispatch({ type: "SET_ACCOUNT_NUMBER", payload: { value: e.target.value }})}
           />
           <TextInput
             label="Confirm Account Number"
             placeholder="Account number"
-            value={confirmAccountNumber}
-            validate={(value) => [{ condition: value !== accountNumber, error: "Your Account numbers do not match."}]}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmAccountNumber(e.target.value)}
+            value={form.confirmAccountNumber.value}
+            validate={(value) => [{ condition: value !== form.accountNumber.value, error: "Your Account numbers do not match."}]}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => dispatch({ type: "SET_CONFIRM_ACCOUNT_NUMBER", payload: { value: e.target.value }})}
           />
           <TextInput
             label="Routing Number"
             placeholder="Routing number"
-            value={routingNumber}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutingNumber(e.target.value)}
+            value={form.routingNumber.value}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => dispatch({ type: "SET_ROUTING_NUMBER", payload: { value: e.target.value }})}
             validate={handleOnValidateRoutingNumber}
           />
           <RadioInput label="Account Type">
             <RadioInput.Item
               label="Checking"
-              checked={accountType === "Checking"}
-              onChange={() => setAccountType("Checking")}
+              checked={form.accountType.value === "Checking"}
+              onChange={() => dispatch({ type: "SET_ACCOUNT_TYPE", payload: { value: "Checking" }})}
             />
             <RadioInput.Item
               label="Savings"
-              checked={accountType === "Savings"}
-              onChange={() => setAccountType("Savings")}
+              checked={form.accountType.value === "Savings"}
+              onChange={() => dispatch({ type: "SET_ACCOUNT_TYPE", payload: { value: "Savings" }})}
             />
           </RadioInput>
         </div>
@@ -266,13 +446,9 @@ function Payment(props: PaymentProps) {
           <TextInput
             label="Payment Amount"
             placeholder="$0.00"
-            value={paymentAmount}
-            validate={(value) => [{ condition: Number.parseFloat(value) > totalBalance, error: "Insufficient funds" }]}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              const value = e.target.value;
-              setCalculateProateEnabled(true);
-              setPaymentAmount(value);
-            }}
+            value={form.paymentAmount.value}
+            validate={(value) => [{ condition: Number.parseFloat(value) > totalBalance, error: "Your payment amount can not be more than your total balance." }]}
+            onChange={handleOnPaymentAmountChanged}
           />
         </div>
       </div>
@@ -295,6 +471,7 @@ function Payment(props: PaymentProps) {
                 key={account.name}
                 value={account.formattedValue}
                 onCheckedChanged={handleOnCheckedChanged}
+                onValidateChanged={handleOnAccountValidationChanged}
                 onChange={handleOnAccountValueChanged}
               />
             );
@@ -302,7 +479,7 @@ function Payment(props: PaymentProps) {
         </div>
       </div>
       <button
-        disabled={amountOfAccountsEnabled < 1}
+        disabled={amountOfAccountsEnabled < 1 || (form.accountType.value !== "Checking" && form.accountType.value !== "Savings")}
         className="bg-brand p-3 rounded-md w-full disabled:bg-light-brand text-white">
         Submit
       </button>

@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import Payment from "@/components/Payment";
 
 const accounts = [

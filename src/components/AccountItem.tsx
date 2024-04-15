@@ -16,12 +16,13 @@ type AccountItemProps = {
   balance: number;
   enabled?: boolean;
   value: string;
-  onCheckedChanged?: (id: string) => void;
   onChange?: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  onCheckedChanged?: (id: string) => void;
+  onValidateChanged?: (id: string, isValid: boolean) => void;
 }
 
 function AccountItem(props: AccountItemProps) {
-  const { name, value, balance, enabled = false, onChange, onCheckedChanged } = props;
+  const { name, value, balance, enabled = false, onChange, onValidateChanged, onCheckedChanged } = props;
   const id = useId();
 
   return (
@@ -57,6 +58,7 @@ function AccountItem(props: AccountItemProps) {
         value={value}
         onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
         validate={(value) => [{ condition: Number.parseFloat(value) >= balance, error: "Insufficient funds" }]}
+        onValidateChanged={onValidateChanged ? (isValid) => onValidateChanged(name, isValid) : undefined}
         placeholder="$0.00"
       />
     </div>
