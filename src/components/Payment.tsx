@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
 import TextField from "@/components/TextField";
 import Radio from "@/components/Radio";
@@ -8,29 +8,6 @@ import AccountItem from "@/components/AccountItem";
 
 import currencyFormat from "@/utils/currencyFormat";
 import paymentReducer from "@/reducer/payment";
-
-/*
-
-todo: 
-- make sure payment amount can't be negative.
-- check for all form validation before allow user to press submit.
-  - account number
-  - confirm account number
-  - account type
-  - payment amount
-  - accounts along with their amount inputs
-  + at least one account is selected
-*/
-
-/*
-user inputs payment amount -> recalculate all selected accounts prorate
-
-user untoggles after user controls account input -> recalculates payment amount
-
-user controls account input & untoggles account -> recaluclates prorate
-
-user selects an account, inputs an account's amount, select another 
-*/
 
 type Account = {
   name: string;
@@ -73,6 +50,7 @@ const initialPaymentState = {
 function Payment(props: PaymentProps) {
   const { accounts: payload } = props;
 
+  const [formHasBeenSubmitted, setFormHasBeenSubmitted] = useState(false);
   const [form, dispatch] = useReducer(paymentReducer, initialPaymentState);
 
   const totalBalance = useMemo(() => {
@@ -150,9 +128,22 @@ function Payment(props: PaymentProps) {
 
     return amountOfAccountsEnabled >= 1;
   }, [form, amountOfAccountsEnabled]);
+
+  const handleOnSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    setFormHasBeenSubmitted(true);
+  }
+
+  if (formHasBeenSubmitted) {
+    return (
+      <div className="flex flex-col justify-center align-middle h-screen">
+        <p className="text-center my-auto">Form submitted!</p>
+      </div>
+    );
+  }
   
   return (
-    <form className="bg-red-100 p-5 max-w-xl mx-auto m-10">
+    <form onSubmit={handleOnSubmit} className="bg-red-100 p-5 max-w-xl mx-auto m-10">
       <div>
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 md:grid grid-cols-2 gap-5">
