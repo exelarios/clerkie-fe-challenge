@@ -18,6 +18,7 @@ function toggleAccount(form: State, action: Action): State {
         // being unchecked, we state the value to undefined.
         value: account.enabled ? undefined : account.value,
         formattedValue: account.enabled ? "": account.formattedValue,
+        message: account.enabled ? "" : account.message,
         isValidated: account.message.length === 0
       }
     }

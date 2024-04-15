@@ -1,9 +1,9 @@
-import setAccountNumber from "./actions/setAccountNumber";
-import setAccountPayment from "./actions/setAccountPayment";
-import setConfirmAccountNumber from "./actions/setConfirmAccountNumber";
-import setPaymentAmount from "./actions/setPaymentAmount";
-import setRoutingNumber from "./actions/setRoutingNumber";
-import toggleAccount from "./actions/toggleAccount";
+import setAccountNumber from "@/reducer/actions/setAccountNumber";
+import setAccountPayment from "@/reducer/actions/setAccountPayment";
+import setConfirmAccountNumber from "@/reducer/actions/setConfirmAccountNumber";
+import setPaymentAmount from "@/reducer/actions/setPaymentAmount";
+import setRoutingNumber from "@/reducer/actions/setRoutingNumber";
+import toggleAccount from "@/reducer/actions/toggleAccount";
 
 type Account = {
   name: string;

@@ -53,13 +53,12 @@ function AccountItem(props: AccountItemProps) {
         </label>
       </div>
       <TextField
-        className="text-right ltr:w-28 my-auto"
+        className="text-right w-28 my-auto self-end"
         disabled={!enabled}
         value={value}
         errorMessage={errorMessage}
         placeholder="$0.00"
         onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
-        // validate={(value) => [{ condition: Number.parseFloat(value) >= balance, error: "Insufficient funds" }]}
       />
     </div>
   );
