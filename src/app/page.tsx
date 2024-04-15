@@ -13,14 +13,16 @@ const accounts = [
     name: "Account C",
     balance: 5438
   },
-]
+];
 
 export default function Home() {
   return (
     <main>
       <Payment accounts={accounts}/>
       <footer className="p-10">
-        <p className="text-center text-xs text-light-subtle">Deric Kwok - Clerkie's Take-home Frontend Challenge</p>
+        <p className="text-center text-xs text-light-subtle">
+          Deric Kwok - Clerkie's Take-home Frontend Challenge
+        </p>
       </footer>
     </main>
   );

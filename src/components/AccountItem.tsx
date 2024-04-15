@@ -1,5 +1,5 @@
 import { useId } from "react";
-import TextInput from "@/components/TextInput";
+import TextField from "@/components/TextField";
 
 import currencyFormat from "@/utils/currencyFormat";
 
@@ -16,13 +16,13 @@ type AccountItemProps = {
   balance: number;
   enabled?: boolean;
   value: string;
+  errorMessage: string;
   onChange?: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   onCheckedChanged?: (id: string) => void;
-  onValidateChanged?: (id: string, isValid: boolean) => void;
 }
 
 function AccountItem(props: AccountItemProps) {
-  const { name, value, balance, enabled = false, onChange, onValidateChanged, onCheckedChanged } = props;
+  const { name, value, balance, enabled = false, errorMessage, onChange, onCheckedChanged } = props;
   const id = useId();
 
   return (
@@ -52,14 +52,14 @@ function AccountItem(props: AccountItemProps) {
           </div>
         </label>
       </div>
-      <TextInput
+      <TextField
         className="text-right w-28 my-auto"
         disabled={!enabled}
         value={value}
-        onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
-        validate={(value) => [{ condition: Number.parseFloat(value) >= balance, error: "Insufficient funds" }]}
-        onValidateChanged={onValidateChanged ? (isValid) => onValidateChanged(name, isValid) : undefined}
+        errorMessage={errorMessage}
         placeholder="$0.00"
+        onChange={onChange ? (e: React.ChangeEvent<HTMLInputElement>) => onChange(name, e) : undefined}
+        // validate={(value) => [{ condition: Number.parseFloat(value) >= balance, error: "Insufficient funds" }]}
       />
     </div>
   );

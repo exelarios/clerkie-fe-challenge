@@ -11,7 +11,7 @@ type RadioContext = {
 
 const RadioContext = createContext<RadioContext | null>(null);
 
-function RadioInput(props: RadioInputProps) {
+function Radio(props: RadioInputProps) {
   const { label, children } = props;
 
   const value = useMemo(() => {
@@ -60,6 +60,6 @@ function Item(props: RadioInputItemProps) {
   );
 }
 
-RadioInput.Item = Item;
+Radio.Item = Item;
 
-export default RadioInput;
+export default Radio;

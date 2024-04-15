@@ -1,62 +1,38 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type Validation = {
   condition: boolean;
   error: string;
 }
 
-type TextInputProps = {
+type TextFieldProps = {
   label?: string;
   value?: string;
-  validate?: (value: string) => Validation[];
-  onValueChanged?: (currencyFormat: CurrencyFormat) => void;
-  onValidateChanged?: (isValid: boolean) => void;
-} & React.HTMLProps<HTMLInputElement>
+  errorMessage?: string;
+} & React.HTMLProps<HTMLInputElement>;
 
-function TextInput(props: TextInputProps) {
+function TextField(props: TextFieldProps) {
   const {
     id: otherIds,
     className: passedClassName,
     label,
     disabled,
     value,
-    validate,
-    onValidateChanged,
+    errorMessage = "",
     ...otherProps 
   } = props;
 
   const id = useId();
-  const [errorMessage, setErrorMessage] = useState("");
 
   const styles = useMemo(() => {
     if (disabled) {
       return "border-disabled";
-    } else if (errorMessage.length > 0) {
+    } else if (errorMessage?.length > 0) {
       return "border-critical focus:outline-light-critical focus:border-critical";
     } else {
       return "border-border-default hover:border-hover"
     }
   }, [disabled, errorMessage]);
-
-  useEffect(() => {
-    if (!value) return;
-
-    let isValid = true;
-    setErrorMessage("");
-    if (validate && value != undefined) {
-      const tests = validate(value);
-      for (const test of tests) {
-        if (test.condition) {
-          isValid = false;
-          setErrorMessage(test.error);
-        }
-      }
-
-      if (onValidateChanged) {
-        onValidateChanged(isValid);
-      }
-    }
-  }, [validate, value]);
 
   return (
     <div className="flex flex-col gap-y-1">
@@ -88,4 +64,4 @@ function TextInput(props: TextInputProps) {
   );
 }
 
-export default TextInput;
+export default TextField;
