@@ -53,6 +53,7 @@ function AccountItem(props: AccountItemProps) {
         </label>
       </div>
       <TextField
+        digitsOnly
         className="text-right w-28 my-auto self-end"
         disabled={!enabled}
         value={value}
