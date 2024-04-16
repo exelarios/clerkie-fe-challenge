@@ -149,6 +149,7 @@ function Payment(props: PaymentProps) {
         <h2 className="font-semibold text-sm">Payment Information</h2>
         <div className="my-3 md:grid grid-cols-2 gap-5">
           <TextField
+            digitsOnly
             label="Account Number"
             placeholder="Account number"
             value={form.accountNumber.value}
@@ -158,6 +159,7 @@ function Payment(props: PaymentProps) {
             }}
           />
           <TextField
+            digitsOnly
             label="Confirm Account Number"
             placeholder="Account number"
             value={form.confirmAccountNumber.value}
@@ -167,6 +169,7 @@ function Payment(props: PaymentProps) {
             }}
           />
           <TextField
+            digitsOnly
             label="Routing Number"
             placeholder="Routing number"
             value={form.routingNumber.value}
@@ -197,6 +200,7 @@ function Payment(props: PaymentProps) {
         <h2 className="font-semibold text-sm">Payment Detail</h2>
         <div className="my-5 md:grid grid-cols-2 gap-5">
           <TextField
+            digitsOnly
             label="Payment Amount"
             placeholder="$0.00"
             value={form.paymentAmount.value}
@@ -225,7 +229,6 @@ function Payment(props: PaymentProps) {
                 value={account.formattedValue}
                 errorMessage={account.message}
                 onCheckedChanged={(id) => {
-                  console.log(id);
                   dispatch({ type: "TOGGLE_ACCOUNT", payload: { id }})
                 }}
                 onChange={handleOnAccountValueChanged}

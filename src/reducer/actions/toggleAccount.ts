@@ -6,7 +6,6 @@ function toggleAccount(form: State, action: Action): State {
     throw new Error(`Incorrect action type called; must be ${action.type}`);
   }
 
-  console.log("toggle");
   const { id } = action.payload;
   const paymentValue = Number.parseFloat(form.paymentAmount.value);
 

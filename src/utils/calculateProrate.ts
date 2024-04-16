@@ -2,7 +2,6 @@ import round from "@/utils/round";
 import type { AccountList } from "@/reducer/payment";
 
 function calculateProrate(accounts: AccountList[], paymentAmount: number) {
-  console.log("callll");
   const selectedTotalBalance = accounts.reduce((prev, current) =>  {
     if (current.enabled) {
       return prev + current.balance;

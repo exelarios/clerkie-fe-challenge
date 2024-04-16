@@ -1,13 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-
-type Validation = {
-  condition: boolean;
-  error: string;
-}
+import { useId, useMemo } from "react";
 
 type TextFieldProps = {
   label?: string;
   value?: string;
+  digitsOnly?: boolean;
   errorMessage?: string;
 } & React.HTMLProps<HTMLInputElement>;
 
@@ -18,7 +14,9 @@ function TextField(props: TextFieldProps) {
     label,
     disabled,
     value,
+    digitsOnly = false,
     errorMessage = "",
+    onChange,
     ...otherProps 
   } = props;
 
@@ -34,6 +32,23 @@ function TextField(props: TextFieldProps) {
     }
   }, [disabled, errorMessage]);
 
+  const handleOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (onChange == undefined) return;
+
+    const target = event.target;
+    const value = target.value;
+
+    // Only allow tokens: [0-9] | .
+    if (digitsOnly) {
+      const regex = new RegExp(/^[0-9]*(\.[0-9]*)?$/);
+      const isOnlyDigits = regex.test(value);
+
+      isOnlyDigits && onChange(event);
+    } else {
+      onChange(event);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-y-1">
       {label != null ?
@@ -48,6 +63,7 @@ function TextField(props: TextFieldProps) {
         id={id}
         type="text"
         disabled={disabled}
+        onChange={handleOnChange}
         value={value}
         className={`
           disabled:bg-disabled 
